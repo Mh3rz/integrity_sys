@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Text Extractor with Instructions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html, body { height: 100%; }
+    </style>
+    </head>
+    <body class="bg-gray-100 h-full">
+
+    <!-- Header -->
+    <div class="w-full bg-white shadow flex justify-between items-center p-4 font-semibold">
+        <span class="text-blue-600">All in One - Dashboard</span>
+        <a href="/alias-editor" class="text-sm bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">Manage Aliases</a>
+    </div>
+
+    <div class="flex h-[calc(100%-64px)]">
+        <!-- Left Input -->
+        <div class="w-[60%] h-full p-4">
+        <div class="h-full bg-white p-6 rounded-xl shadow-lg flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold">Paste Your Input</h2>
+            <button onclick="extractAndCopyInput()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Process</button>
+            </div>
+            <textarea id="inputText" class="flex-1 border p-4 rounded resize-none" placeholder="Paste your alert text here..."></textarea>
+        </div>
+        </div>
+
+        <!-- Right Output -->
+        <div class="w-[40%] h-full flex flex-col space-y-2 p-4">
+            <!-- Tab Buttons -->
+            <div class="flex border-b mb-2">
+                <button onclick="showTab('iocAnalysisTab', this)" class="tab-button px-4 py-2 font-semibold text-blue-600 border-b-2 border-blue-600">IOC Analysis</button>
+                <button onclick="showTab('summaryTab', this)" class="tab-button px-4 py-2 font-semibold text-gray-600 hover:text-blue-600">Processed Alerts</button>
+                <button onclick="showTab('reportsTab', this)" class="tab-button px-4 py-2 font-semibold text-gray-600 hover:text-blue-600">Reports</button>
+            </div>
+
+        <!-- Summary Tab -->
+        <div id="summaryTab" class="tab-content flex-1 flex flex-col space-y-2">
+            <div class="flex justify-between items-center mb-2">
+            <h2 class="text-xl font-bold">Processed Alerts</h2>
+            <button onclick="copySummary()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Copy</button>
+            </div>
+            <textarea id="siteList" readonly class="w-full h-[90%] border p-4 rounded resize-none"></textarea>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reportsTab" class="tab-content hidden flex-1 flex flex-col space-y-4">
+            <div>
+            <label class="block font-semibold mb-1">Darknet Report:</label>
+            <textarea id="darknetInput" class="w-full h-40 border p-4 rounded resize-none" placeholder="Enter Darknet clients here..."></textarea>
+            </div>
+            <div>
+            <label class="block font-semibold mb-1">Firewall Report:</label>
+            <textarea id="firewallInput" class="w-full h-40 border p-4 rounded resize-none" placeholder="Enter Firewall clients here..."></textarea>
+            </div>
+            <button onclick="clearReports()" class="text-sm text-red-500 underline">Clear All Reports</button>
+        </div>
+        
+        <!-- IOCs Tab -->
+        <div id="iocAnalysisTab" class="tab-content hidden">
+            <h3 class="text-xl font-bold mb-2">IOC Analysis</h3>
+            <!-- <div class="grid grid-cols-1 md:grid-cols-2 gap-4"> -->
+                <!-- VirusTotal Results -->
+                <label class="block font-bold mb-1">VirusTotal Results</label>
+                <div id="virustotalResults" class="w-full border p-2 rounded h-48 overflow-auto bg-white whitespace-pre-wrap text-sm"></div>
+
+                <!-- AbuseIPDB Results -->
+                <label class="block font-bold mb-1">AbuseIPDB Results</label>
+                <div id="abuseipResults" class="w-full border p-2 rounded h-48 overflow-auto bg-white whitespace-pre-wrap text-sm"></div>
+            <!-- </div> -->
+        </div>
+
+        <!-- Instructions -->
+        <div class="h-[40%] bg-white p-4 rounded-xl shadow-lg overflow-auto">
+            <h2 class="text-xl font-bold mb-2">Client Instructions</h2>
+            <div id="siteInstructions" class="w-full h-[calc(100%-44px)] text-sm bg-gray-50 p-2 border rounded overflow-auto"></div>
+        </div>
+        </div>
+    </div>
+
+    <script>
+
+        let aliasMap = {};
+
+        // Load aliases from server
+        fetch("/alias-map.json")
+            .then(res => res.json())
+            .then(data => {
+                aliasMap = Object.fromEntries(
+                    Object.entries(data).map(([k, v]) => [k.trim().toLowerCase(), v.trim()])
+                );
+            });
+
+        // Helper to resolve alias
+        function resolveAlias(siteName) {
+            return aliasMap[siteName.trim().toLowerCase()] || siteName.trim();
+        }
+        const extractedSites = new Set();
+
+        window.addEventListener("DOMContentLoaded", () => {
+        const savedSummary = localStorage.getItem("summarySites");
+        const savedDarknet = localStorage.getItem("darknetReport");
+        const savedFirewall = localStorage.getItem("firewallReport");
+
+        if (savedSummary) {
+            document.getElementById("siteList").value = savedSummary;
+            savedSummary.split('\n')
+            .filter(line => line.startsWith("Site: "))
+            .forEach(line => extractedSites.add(line.replace("Site: ", "").trim()));
+        }
+
+        if (savedDarknet) document.getElementById("darknetInput").value = savedDarknet;
+        if (savedFirewall) document.getElementById("firewallInput").value = savedFirewall;
+        });
+
+        function extractText() {
+            const text = document.getElementById("inputText").value;
+            const box = document.getElementById("siteInstructions");
+            box.innerHTML = "";
+
+            let matches = [];
+
+            const forMatch = text.match(/on\s+\d{1,2} [A-Za-z]+, \d{4} \d{1,2}:\d{2} [AP]M for ([^\n\.]+)/);
+            if (forMatch) matches.push(forMatch[1]);
+
+            const siteNameMatch = text.match(/Site Name\s+(.+)/);
+            if (siteNameMatch) {
+                const rawSite = siteNameMatch[1].trim();
+                if (rawSite.includes("MSSP")) {
+                    const groupMatch = text.match(/Group\s+(.+)/);
+                    if (groupMatch) matches.push(groupMatch[1]);
+                } else {
+                    matches.push(rawSite);
+                }
+            }
+
+            const multiMatches = [...text.matchAll(/^Site:\s+(.+)$/gm)];
+            for (const m of multiMatches) {
+                matches.push(m[1]);
+            }
+
+            const processedSet = new Set(); // New set to avoid reloading same site multiple times in one run
+
+            for (const raw of matches) {
+                const resolved = resolveAlias(raw);
+
+                if (!processedSet.has(resolved)) {
+                    processedSet.add(resolved);
+                    loadConfluenceInstruction(resolved); // Always load fresh instructions
+                }
+
+                extractedSites.add(resolved); // Still track globally
+            }
+
+
+            updateSiteList();
+
+            if (extractedSites.size === 0) {
+                box.innerHTML = "<p class='italic text-red-500'>No site name found in alert.</p>";
+            }
+
+            analyzeIndicators(text); // Triggers IOC checks
+
+        }
+
+        function extractAndCopyInput() {
+            extractText(); // Run the original process logic
+
+            const inputText = document.getElementById("inputText").value;
+
+            navigator.clipboard.writeText(inputText)
+                .then(() => {
+                    console.log("Input text copied to clipboard.");
+                })
+                .catch(err => {
+                    console.error("Failed to copy input text:", err);
+                });
+        }
+
+        async function analyzeIndicators(text) {
+            try {
+                const response = await fetch("/analyze", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await response.json();
+
+                const abuseBox = document.getElementById("abuseipResults");
+                const vtBox = document.getElementById("virustotalResults");
+
+                abuseBox.innerHTML = "";
+                vtBox.innerHTML = "";
+
+                // IPs section
+                if (data.ips.length > 0) {
+                    data.ips.forEach(entry => {
+                        const [ip, result] = Object.entries(entry)[0];
+
+                        abuseBox.innerHTML += `<strong><span style="color: #DC143C;">IP:</span></strong> ${ip}<br>`;
+
+                        if (result.data) {
+                            abuseBox.innerHTML += `Abuse Score: ${result.data.abuseConfidenceScore}<br>`;
+                            abuseBox.innerHTML += `Country: ${result.data.countryCode}<br>`;
+                            abuseBox.innerHTML += `ISP: ${result.data.isp}<br>`;
+                        } else {
+                            const message = result?.error?.message || result?.error || "Unknown error";
+                            abuseBox.innerHTML += `Error: ${message}<br>`;
+                        }
+
+                        abuseBox.innerHTML += `View: <a href="https://www.abuseipdb.com/check/${ip}" target="_blank" class="text-blue-600 underline"><strong>Open in AbuseIPDB</strong></a><br><br>`;
+                    });
+                }
+
+                // Hashes section
+                if (data.hashes.length > 0) {
+                    data.hashes.forEach(entry => {
+                        const [hash, result] = Object.entries(entry)[0];
+
+                        vtBox.innerHTML += `<strong><span style="color: #0000FF;">Hash:</span></strong> ${hash}<br>`;
+
+
+                        if (result.data) {
+                            const stats = result.data.attributes.last_analysis_stats;
+                            vtBox.innerHTML += `Malicious: ${stats.malicious}, Suspicious: ${stats.suspicious}, Harmless: ${stats.harmless}<br>`;
+                        } else {
+                            const message = result?.error?.message || result?.error || "Unknown error";
+                            vtBox.innerHTML += `Error: ${message}<br>`;
+                        }
+
+                        vtBox.innerHTML += `View: <a href="https://www.virustotal.com/gui/file/${hash}" target="_blank" class="text-blue-600 underline"><strong>Open in VirusTotal</strong></a><br><br>`;
+                    });
+                }
+
+                // Domains section (NEW)
+                if (data.domains && data.domains.length > 0) {
+                    data.domains.forEach(entry => {
+                        const [domain, result] = Object.entries(entry)[0];
+
+                        vtBox.innerHTML += `<strong><span style="color: #0000FF;">Domain:</span></strong> ${domain}<br>`;
+
+                        if (result.data) {
+                            const stats = result.data.attributes.last_analysis_stats;
+                            vtBox.innerHTML += `Malicious: ${stats.malicious}, Suspicious: ${stats.suspicious}, Harmless: ${stats.harmless}<br>`;
+                        } else {
+                            const message = result?.error?.message || result?.error || "Unknown error";
+                            vtBox.innerHTML += `Error: ${message}<br>`;
+                        }
+
+                        vtBox.innerHTML += `View: <a href="https://www.virustotal.com/gui/domain/${domain}" target="_blank" class="text-blue-600 underline"><strong>Open in VirusTotal</strong></a><br><br>`;
+                    });
+                }
+
+            } catch (err) {
+                console.error("Error analyzing indicators", err);
+            }
+        }
+
+        function updateSiteList() {
+            const listArea = document.getElementById("siteList");
+            const sites = Array.from(extractedSites);
+            sites.sort();
+            const summaryText = "Alerts Processed:\n" + sites.map(s => `Site: ${s}`).join('\n');
+            listArea.value = summaryText;
+            localStorage.setItem("summarySites", summaryText);
+        }
+
+        async function loadConfluenceInstruction(siteName) {
+            const box = document.getElementById("siteInstructions");
+
+            try {
+                const response = await fetch(`/confluence?title=${encodeURIComponent(siteName)}&t=${Date.now()}`);
+
+                if (!response.ok) throw new Error("Not found");
+
+                const html = await response.text();
+                const content = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+                let result = content ? content[1] : html;
+
+                result = result.replace(/<img[^>]*>/gi, '');
+                result = result.replace(/image-\d{8}-\d{6}\.(png|jpe?g|gif|webp|svg)/gi, '');
+
+                box.innerHTML += `<div>${result}</div>`;
+            } catch (err) {
+                box.innerHTML += `<p class="text-red-600 italic">No instructions found for "${siteName}".</p>`;
+            }
+        }
+
+        function showTab(tabId, btn) {
+            // Hide all tab contents
+            document.querySelectorAll(".tab-content").forEach(tab => tab.classList.add("hidden"));
+
+            // Remove active styles from all buttons
+            document.querySelectorAll(".tab-button").forEach(button => {
+                button.classList.remove("text-blue-600", "border-blue-600");
+                button.classList.add("text-gray-600");
+            });
+
+            // Show selected tab
+            document.getElementById(tabId).classList.remove("hidden");
+
+            // Add active styles to clicked button
+            btn.classList.remove("text-gray-600");
+            btn.classList.add("text-blue-600", "border-blue-600");
+        }
+
+        function copySummary() {
+            const summary = document.getElementById("siteList").value.trim();
+            const darknet = document.getElementById("darknetInput").value.trim();
+            const firewall = document.getElementById("firewallInput").value.trim();
+
+            let fullText = summary;
+            if (darknet) fullText += "\n\nDarknet Report\n" + darknet;
+            if (firewall) fullText += "\n\nFirewall Report\n" + firewall;
+
+            navigator.clipboard.writeText(fullText)
+                .then(() => alert("Summary copied to clipboard!"))
+                .catch(err => {
+                alert("Failed to copy text.");
+                console.error(err);
+                });
+        }
+
+        function clearReports() {
+        localStorage.removeItem("summarySites");
+        localStorage.removeItem("darknetReport");
+        localStorage.removeItem("firewallReport");
+
+        document.getElementById("siteList").value = "";
+        document.getElementById("darknetInput").value = "";
+        document.getElementById("firewallInput").value = "";
+        extractedSites.clear();
+        }
+
+        setInterval(() => {
+        localStorage.setItem("summarySites", document.getElementById("siteList").value);
+        localStorage.setItem("darknetReport", document.getElementById("darknetInput").value);
+        localStorage.setItem("firewallReport", document.getElementById("firewallInput").value);
+        }, 2000);
+
+        // Show IOC tab by default
+        document.addEventListener("DOMContentLoaded", () => {
+            const firstTab = document.querySelector(".tab-button");
+            showTab("iocAnalysisTab", firstTab);
+        });
+
+
+    </script>
+</body>
+</html>

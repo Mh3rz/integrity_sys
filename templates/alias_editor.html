@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Alias Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-3xl mx-auto bg-white p-6 rounded shadow">
+
+        <!-- Back to Index -->
+        <a href="{{ url_for('home') }}" class="text-blue-600 hover:underline mb-4 inline-block">
+            ← Back to Home
+        </a>
+
+        <h2 class="text-2xl font-bold mb-4">Edit Site Aliases</h2>
+
+        <form method="POST" class="flex gap-4 mb-6">
+            <input name="alias" placeholder="Alias (e.g. mlrn)" class="border p-2 rounded w-1/2" required>
+            <input name="target" placeholder="Maps to (e.g. Malran)" class="border p-2 rounded w-1/2" required>
+            <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save</button>
+        </form>
+
+        <h3 class="text-lg font-semibold mb-2">Current Aliases</h3>
+        <ul class="space-y-2">
+            {% for key, value in alias_map.items() %}
+            <li class="flex justify-between items-center border p-2 rounded">
+                <span><strong>{{ key }}</strong> → {{ value }}</span>
+                <form method="POST" action="{{ url_for('delete_alias') }}">
+                    <input type="hidden" name="alias" value="{{ key }}">
+                    <button class="text-red-600 hover:underline">Delete</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
