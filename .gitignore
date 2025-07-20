@@ -1,0 +1,22 @@
+# Bytecode and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment and config
+.env
+*.db
+*.sqlite3
+venv/
+env/
+.integrity_sys_env/
+
+# Logs and Python packaging
+*.log
+*.egg-info/
+instance/
+
+# Mac/Windows system files
+.DS_Store
+Thumbs.db
