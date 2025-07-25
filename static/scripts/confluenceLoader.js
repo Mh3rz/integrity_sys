@@ -14,6 +14,6 @@ async function loadConfluenceInstruction(siteName) {
 
         box.innerHTML += `<div>${result}</div>`;
     } catch (err) {
-        box.innerHTML += `<p class="text-red-600 italic">No instructions found for "${siteName}".</p>`;
+        box.innerHTML += `<p class="text-red-600 italic"><strong>No instructions found for "${siteName}"</strong>.</p>`;
     }
 }

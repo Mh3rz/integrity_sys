@@ -75,7 +75,7 @@ def get_confluence_instruction():
     html = get_page_by_title(title)
     if html:
         return Response(html, mimetype="text/html")
-    return f"No instructions found for '{title}'", 404
+    return f"<p class='text-red-600 italic'><strong>No instructions found for '{title}'</strong>.</p>"
 
 # --- Alias Manager Web Interface ---
 @app.route("/alias-editor", methods=["GET", "POST"])
@@ -184,7 +184,7 @@ async def async_query_virustotal_domain(client, domain):
         if r.status_code == 200:
             return {domain: r.json()}
         else:
-            return {domain: {"error": r.text}}
+            return {domain: {"error": r.json().get("error", {"message": r.text})}}
     except Exception as e:
         return {domain: {"error": str(e)}}
 

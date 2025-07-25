@@ -36,7 +36,8 @@ async function analyzeIndicators(text) {
         vtBox.innerHTML += `<strong><span style="color: #0000FF;">Hash:</span></strong> ${hash}<br>`;
         if (result.data) {
             const stats = result.data.attributes.last_analysis_stats;
-            vtBox.innerHTML += `Malicious: ${stats.malicious}, Suspicious: ${stats.suspicious}, Harmless: ${stats.harmless}<br>`;
+            const main_name = result.data.attributes;
+            vtBox.innerHTML += `Malicious: ${stats.malicious}, Suspicious: ${stats.suspicious}, Harmless: ${stats.harmless}, Undetected: ${stats.undetected}, Timeout: ${stats.timeout}<br><strong><span style="color: #d2151eff;">Name:</span></strong> ${main_name.meaningful_name}<br>`;
         } else {
             const message = result?.error?.message || result?.error || "Unknown error";
             vtBox.innerHTML += `Error: ${message}<br>`;
@@ -51,7 +52,8 @@ async function analyzeIndicators(text) {
             vtBox.innerHTML += `<strong><span style="color: #0000FF;">Domain:</span></strong> ${domain}<br>`;
             if (result.data) {
             const stats = result.data.attributes.last_analysis_stats;
-            vtBox.innerHTML += `Malicious: ${stats.malicious}, Suspicious: ${stats.suspicious}, Harmless: ${stats.harmless}<br>`;
+            // const main_name = result.data.attributes;
+            vtBox.innerHTML += `Malicious: ${stats.malicious}, Suspicious: ${stats.suspicious}, Harmless: ${stats.harmless}, Undetected: ${stats.undetected}, Timeout: ${stats.timeout}<br>`;
             } else {
             const message = result?.error?.message || result?.error || "Unknown error";
             vtBox.innerHTML += `Error: ${message}<br>`;
