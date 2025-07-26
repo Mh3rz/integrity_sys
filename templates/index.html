@@ -13,15 +13,47 @@
     <script src="{{ url_for('static', filename='scripts/tabHandler.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/copyUtils.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/init.js') }}"></script>
-
+    <script src="{{ url_for('static', filename='scripts/sidebarMenu.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/defaulTextModal.js') }}"></script>
     <style>
         html, body { height: 100%; }
     </style>
     </head>
     <body class="bg-gray-100 h-full">
 
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black bg-opacity-30 z-40" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar Panel (LEFT SIDE) -->
+    <div id="settingsSidebar" class="hidden fixed top-0 left-0 w-64 h-full bg-white shadow-xl z-50 transition-transform transform -translate-x-full">
+        <div class="flex justify-between items-center px-4 py-3 border-b">
+            <h2 class="text-lg font-semibold">Settings</h2>
+            <button onclick="toggleSidebar()" class="text-gray-600 hover:text-black text-xl">&times;</button>
+        </div>
+        <div class="p-4 space-y-4 text-sm">
+            <!-- Open Settings Modal Button -->
+            <button onclick="openTemplateEditor()" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100">
+                📝 Set Default Input Template
+            </button>
+            <button onclick="alert('Option 2 clicked')" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100">📂 Option 2</button>
+            <button onclick="alert('Option 3 clicked')" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100">💾 Option 3</button>
+        </div>
+    </div>
+    <!-- Modal for editing default text -->
+    <div id="templateModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white w-96 rounded-xl shadow-lg p-6">
+            <h2 class="text-lg font-bold mb-2">Edit Default Input Template</h2>
+            <textarea id="templateInput" class="w-full h-40 border rounded p-2 mb-4 resize-none" placeholder="Enter default text..."></textarea>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeTemplateEditor()" class="bg-gray-300 hover:bg-gray-400 text-sm px-3 py-1 rounded">Cancel</button>
+                <button onclick="saveTemplate()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded">Save</button>
+            </div>
+        </div>
+    </div>
+    <!-- ================================================================================================================= -->
     <!-- Header -->
     <div class="w-full bg-white shadow flex justify-between items-center p-4 font-semibold">
+        <button onclick="toggleSidebar()" class="text-sm bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">⚙️ Settings</button>
         <span class="text-blue-600">All in One - Dashboard</span>
         <a href="/alias-editor" class="text-sm bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">Manage Aliases</a>
     </div>
@@ -29,13 +61,17 @@
     <div class="flex h-[calc(100%-64px)]">
         <!-- Left Input -->
         <div class="w-[60%] h-full p-4">
-        <div class="h-full bg-white p-6 rounded-xl shadow-lg flex flex-col">
-            <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold">Paste Your Input</h2>
-            <button onclick="extractAndCopyInput()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Process</button>
+            <div class="h-full bg-white p-6 rounded-xl shadow-lg flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold">Paste Your Input</h2>
+                    <button onclick="extractAndCopyInput()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Process</button>
+                </div>
+                <textarea id="inputText" class="flex-1 border p-4 rounded resize-none" placeholder="Paste your alert text here..."></textarea>
+                <button onclick="loadTemplate()" class="mt-3 bg-gray-200 text-sm px-4 py-2 rounded hover:bg-gray-300 self-start">
+                    Reset to Default Template
+                </button>
+
             </div>
-            <textarea id="inputText" class="flex-1 border p-4 rounded resize-none" placeholder="Paste your alert text here..."></textarea>
-        </div>
         </div>
 
         <!-- Right Output -->
@@ -105,7 +141,6 @@
             <h2 class="text-xl font-bold mb-2">Client Instructions</h2>
             <div id="siteInstructions" class="w-full h-[calc(100%-44px)] text-sm bg-gray-50 p-2 border rounded overflow-auto"></div>
         </div>
-        
     </div>
 </body>
 </html>

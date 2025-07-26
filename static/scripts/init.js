@@ -6,3 +6,7 @@ function updateSiteList() {
     listArea.value = summaryText;
     localStorage.setItem("summarySites", summaryText);
 }
+// auto-fill the textarea when the page loads (defaultText)
+window.onload = function () {
+    loadTemplate();
+};
