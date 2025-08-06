@@ -17,23 +17,6 @@ CONFLUENCE_API_TOKEN = os.getenv("CONFLUENCE_API_TOKEN")
 CONFLUENCE_DOMAIN = os.getenv("CONFLUENCE_DOMAIN")
 CONFLUENCE_SPACE_KEY = os.getenv("CONFLUENCE_SPACE_KEY")
 
-# Alias map file
-ALIAS_MAP_FILE = "alias_map.json"
-
-def load_alias_map():
-    if not os.path.exists(ALIAS_MAP_FILE):
-        return {}
-    with open(ALIAS_MAP_FILE, "r") as f:
-        return json.load(f)
-
-def save_alias_map(data):
-    with open(ALIAS_MAP_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
-def resolve_title(title):
-    alias_map = load_alias_map()
-    return alias_map.get(title.strip().lower(), title.strip())
-
 def get_page_by_title(title):
     resolved_title = resolve_title(title)
 
@@ -78,6 +61,24 @@ def get_confluence_instruction():
     return f"<p class='text-red-600 italic'><strong>No instructions found for '{title}'</strong>.</p>"
 
 # --- Alias Manager Web Interface ---
+# Alias map file
+ALIAS_MAP_FILE = "alias_map.json"
+
+def load_alias_map():
+    if not os.path.exists(ALIAS_MAP_FILE):
+        return {}
+    with open(ALIAS_MAP_FILE, "r") as f:
+        return json.load(f)
+
+def save_alias_map(data):
+    with open(ALIAS_MAP_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+def resolve_title(title):
+    alias_map = load_alias_map()
+    return alias_map.get(title.strip().lower(), title.strip())
+
+# ----
 @app.route("/alias-editor", methods=["GET", "POST"])
 def alias_editor():
     if request.method == "POST":

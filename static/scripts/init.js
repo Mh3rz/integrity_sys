@@ -10,3 +10,15 @@ function updateSiteList() {
 window.onload = function () {
     loadTemplate();
 };
+
+document.addEventListener("DOMContentLoaded", () => {
+    const inputBox = document.getElementById("inputText");
+
+    inputBox.addEventListener("paste", () => {
+        setTimeout(() => {
+            const pastedText = inputBox.value;
+            extractOnlyInstructions(pastedText);
+        }, 100);
+    });
+});
+
