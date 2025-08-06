@@ -13,12 +13,21 @@ window.onload = function () {
 
 document.addEventListener("DOMContentLoaded", () => {
     const inputBox = document.getElementById("inputText");
+    let isPasting = false;
 
     inputBox.addEventListener("paste", () => {
+        isPasting = true;
         setTimeout(() => {
-            const pastedText = inputBox.value;
-            extractOnlyInstructions(pastedText);
+            extractOnlyInstructions(inputBox.value.trim());
+            isPasting = false;
         }, 100);
     });
+
+    inputBox.addEventListener("input", () => {
+        if (!isPasting) {
+            extractOnlyInstructions(inputBox.value.trim());
+        }
+    });
 });
+
 
