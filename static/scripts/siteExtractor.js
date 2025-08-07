@@ -5,30 +5,35 @@ function extractText() {
 
     let matches = [];
 
-    const forMatch = text.match(/on\s+\d{1,2} [A-Za-z]+, \d{4} \d{1,2}:\d{2} [AP]M for ([^\n\.]+)/);
-    if (forMatch) matches.push(forMatch[1]);
+    const forMatch = text.match(/on\s+\d{1,2} [A-Za-z]+, \d{4} \d{1,2}:\d{2} [AP]M for ([\w\s().'-]+)/);
+    if (forMatch) matches.push(cleanSite(forMatch[1]));
 
-    const siteNameMatch = text.match(/Site Name\s+(.+)/);
+    const siteNameMatch = text.match(/Site Name[:\t]\s*(.+)/);
     if (siteNameMatch) {
-        const rawSite = siteNameMatch[1].trim();
-        if (rawSite.includes("MSSP")) {
-        const groupMatch = text.match(/Group\s+(.+)/);
-        if (groupMatch) matches.push(groupMatch[1]);
+        const rawSite = cleanSite(siteNameMatch[1]);
+
+        const groupMatch = text.match(/Group[:\t]\s*(.+)/);
+        const groupName = groupMatch ? cleanSite(groupMatch[1]) : "";
+
+        const genericGroups = ["IntegNoUSB"]; // ✅ Only skip this one
+
+        if (rawSite.includes("MSSP") && groupName && !genericGroups.includes(groupName)) {
+            matches.push(groupName);
         } else {
-        matches.push(rawSite);
+            matches.push(rawSite);
         }
     }
 
     const multiMatches = [...text.matchAll(/^Site:\s+(.+)$/gm)];
-    for (const m of multiMatches) matches.push(m[1]);
+    for (const m of multiMatches) matches.push(cleanSite(m[1]));
 
     const processedSet = new Set();
 
     for (const raw of matches) {
         const resolved = resolveAlias(raw);
         if (!processedSet.has(resolved)) {
-        processedSet.add(resolved);
-        loadConfluenceInstruction(resolved);
+            processedSet.add(resolved);
+            loadConfluenceInstruction(resolved);
         }
         extractedSites.add(resolved);
     }
@@ -40,9 +45,9 @@ function extractText() {
     }
 
     analyzeIndicators(text);
-    }
+}
 
-    function extractAndCopyInput() {
+function extractAndCopyInput() {
     extractText();
     const inputText = document.getElementById("inputText").value;
 
@@ -57,22 +62,31 @@ function extractOnlyInstructions(text) {
 
     let matches = [];
 
-    const forMatch = text.match(/on\s+\d{1,2} [A-Za-z]+, \d{4} \d{1,2}:\d{2} [AP]M for ([^\n\.]+)/);
-    if (forMatch) matches.push(forMatch[1]);
+    const forMatch = text.match(/on\s+\d{1,2} [A-Za-z]+, \d{4} \d{1,2}:\d{2} [AP]M for ([^\n]+)/);
+    if (forMatch) matches.push(cleanSite(forMatch[1]));
 
-    const siteNameMatch = text.match(/Site Name\s+(.+)/);
+
+
+    const siteNameMatch = text.match(/Site Name[:\t]\s*(.+)/);
     if (siteNameMatch) {
-        const rawSite = siteNameMatch[1].trim();
-        if (rawSite.includes("MSSP")) {
-            const groupMatch = text.match(/Group\s+(.+)/);
-            if (groupMatch) matches.push(groupMatch[1]);
+        const rawSite = cleanSite(siteNameMatch[1]);
+
+        const groupMatch = text.match(/Group[:\t]\s*(.+)/);
+        const groupName = groupMatch ? cleanSite(groupMatch[1]) : "";
+
+        const genericGroups = ["IntegNoUSB"]; // ✅ Only skip this one
+
+        if (rawSite.includes("MSSP") && groupName && !genericGroups.includes(groupName)) {
+            matches.push(groupName);
         } else {
             matches.push(rawSite);
         }
     }
 
+
+
     const multiMatches = [...text.matchAll(/^Site:\s+(.+)$/gm)];
-    for (const m of multiMatches) matches.push(m[1]);
+    for (const m of multiMatches) matches.push(cleanSite(m[1]));
 
     const processedSet = new Set();
 
@@ -87,4 +101,9 @@ function extractOnlyInstructions(text) {
     if (processedSet.size === 0) {
         box.innerHTML = "<p class='italic text-red-500'>No site name found in alert.</p>";
     }
+}
+
+// 🧼 Helper to clean site name
+function cleanSite(name) {
+    return name.trim().replace(/[.,;:\s]+$/, "");
 }
