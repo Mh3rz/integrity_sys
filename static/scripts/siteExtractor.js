@@ -5,7 +5,7 @@ function extractText() {
 
     let matches = [];
 
-    const forMatch = text.match(/on\s+\d{1,2} [A-Za-z]+, \d{4} \d{1,2}:\d{2} [AP]M for ([\w\s().'-]+)/);
+    const forMatch = text.match(/on\s+\d{1,2} [A-Za-z]+, \d{4} \d{1,2}:\d{2} [AP]M for ([\w\s().'&-]+)/);
     if (forMatch) matches.push(cleanSite(forMatch[1]));
 
     const siteNameMatch = text.match(/Site Name[:\t]\s*(.+)/);
