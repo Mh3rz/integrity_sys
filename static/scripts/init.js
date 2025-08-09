@@ -23,11 +23,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 100);
     });
 
-    inputBox.addEventListener("input", () => {
-        if (!isPasting) {
-            extractOnlyInstructions(inputBox.value.trim());
-        }
-    });
 });
 
 
